@@ -1,7 +1,7 @@
 package com.example.pockettasks.core
 
 import com.example.pockettasks.data.InMemoryTaskRepository
-import com.example.pockettasks.domain.sort.SortByCreatedDesc
+import com.example.pockettasks.domain.sort.SortOption
 import com.example.pockettasks.domain.usecase.AddTaskUseCase
 import com.example.pockettasks.domain.usecase.ObserveTasksUseCase
 import com.example.pockettasks.domain.usecase.ToggleTaskDoneUseCase
@@ -14,10 +14,12 @@ object AppGraph {
     // Domain - rules/strategies
     private val titleRules = listOf(NonBlankTitleRule())
 
+    val sortFactory = DefaultSortStrategyFactory()
+
     // Usecases
     val observeTasksUseCase = ObserveTasksUseCase(
         readRepo = repo,
-        defaultSort = SortByCreatedDesc()
+        defaultSort = sortFactory.create(SortOption.NEWEST)
     )
 
     val addTaskUseCase = AddTaskUseCase(

@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DividerDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -21,24 +22,30 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.pockettasks.domain.sort.SortOption
 
 @Composable
-fun TasksScreen(
-    vm: TasksViewModel = viewModel(factory = object : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-            // Uwaga: tu wstrzykniemy z AppGraph w MainActivity (za chwilę).
-            error("Use TasksScreen(vm = ...) from Activity")
-        }
-    })
-) {
+fun TasksScreen(vm: TasksViewModel) {
     val state by vm.state.collectAsStateWithLifecycle()
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Text("Pocket Tasks", style = MaterialTheme.typography.headlineSmall)
+
+        Spacer(Modifier.height(12.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(
+                selected = state.sortOption == SortOption.NEWEST,
+                onClick = { vm.onSortChange(option = SortOption.NEWEST) },
+                label = { Text("Newest") }
+            )
+            FilterChip(
+                selected = state.sortOption == SortOption.PRIORITY,
+                onClick = { vm.onSortChange(option = SortOption.PRIORITY) },
+                label = { Text("Priority") }
+            )
+        }
 
         Spacer(Modifier.height(12.dp))
 
