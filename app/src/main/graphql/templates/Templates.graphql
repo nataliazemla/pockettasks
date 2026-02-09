@@ -1,0 +1,13 @@
+query Templates($page: Int!, $limit: Int!) {
+    todos(options: { paginate: { page: $page, limit: $limit } }) {
+        data {
+            ...TodoTemplate
+        }
+    }
+}
+
+fragment TodoTemplate on Todo {
+    id
+    title
+    completed
+}

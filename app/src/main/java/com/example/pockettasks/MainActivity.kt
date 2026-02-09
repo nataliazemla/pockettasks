@@ -21,7 +21,8 @@ class MainActivity : ComponentActivity() {
                 observeTasks = AppGraph.observeTasksUseCase,
                 addTask = AppGraph.addTaskUseCase,
                 toggleTaskDone = AppGraph.toggleTaskDoneUseCase,
-                sortStrategyFactory = AppGraph.sortFactory
+                sortStrategyFactory = AppGraph.sortFactory,
+                fetchTemplates = AppGraph.fetchTemplatesUseCase
             ) as T
         }
     }

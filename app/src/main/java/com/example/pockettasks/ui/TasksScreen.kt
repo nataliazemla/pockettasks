@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DividerDefaults
@@ -67,6 +68,25 @@ fun TasksScreen(vm: TasksViewModel) {
         Button(onClick = vm::onAddClick) { Text("Add") }
 
         Spacer(Modifier.height(16.dp))
+
+        Text("Templates (GraphQL)", style = MaterialTheme.typography.titleMedium)
+
+        Spacer(Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = vm::refreshTemplates, enabled = !state.templatesLoading) {
+                Text(if (state.templatesLoading) "Loading..." else "Refresh")
+            }
+            state.templatesError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        }
+
+        Spacer(Modifier.height(8.dp))
+        state.templates.take(6).forEach { t ->
+            AssistChip(
+                onClick = { vm.onTemplateClick(t.title) },
+                label = { Text(t.title) }
+            )
+            Spacer(Modifier.height(6.dp))
+        }
 
         LazyColumn(Modifier.fillMaxSize()) {
             items(state.tasks, key = { it.id }) { task ->

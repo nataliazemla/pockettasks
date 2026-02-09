@@ -2,6 +2,18 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.apollo)
+}
+
+apollo {
+    service("templates") {
+        packageName.set("com.example.pockettasks.graphql")
+
+        introspection {
+            endpointUrl.set("https://graphqlzero.almansi.me/api")
+            schemaFile.set(file("src/main/graphql/templates/schema.graphqls"))
+        }
+    }
 }
 
 android {
@@ -51,6 +63,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.viewmodel.compose)
     implementation(libs.kotlinx.coroutines.test)
+    implementation(libs.apollo.graphql)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

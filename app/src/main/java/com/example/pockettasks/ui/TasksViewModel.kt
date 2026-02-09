@@ -1,5 +1,6 @@
 package com.example.pockettasks.ui
 
+import android.util.Log
 import androidx.compose.runtime.currentComposer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,6 +10,7 @@ import com.example.pockettasks.domain.sort.SortStrategyFactory
 import com.example.pockettasks.domain.sort.impl.SortByCreatedDesc
 import com.example.pockettasks.domain.sort.impl.SortByPriorityDesc
 import com.example.pockettasks.domain.sort.TaskSortStrategy
+import com.example.pockettasks.domain.templates.FetchTemplatesUseCase
 import com.example.pockettasks.domain.usecase.AddTaskUseCase
 import com.example.pockettasks.domain.usecase.ObserveTasksUseCase
 import com.example.pockettasks.domain.usecase.ToggleTaskDoneUseCase
@@ -22,7 +24,8 @@ class TasksViewModel(
     private val observeTasks: ObserveTasksUseCase,
     private val addTask: AddTaskUseCase,
     private val toggleTaskDone: ToggleTaskDoneUseCase,
-    private val sortStrategyFactory: SortStrategyFactory
+    private val sortStrategyFactory: SortStrategyFactory,
+    private val fetchTemplates: FetchTemplatesUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(TaskUiState())
@@ -30,7 +33,10 @@ class TasksViewModel(
 
     private var observeJob: Job? = null
 
-    init { startObserving() }
+    init {
+        startObserving()
+        refreshTemplates()
+    }
 
     fun onInputChange(value: String) {
         _state.update { it.copy(input = value, error = null) }
@@ -65,4 +71,23 @@ class TasksViewModel(
         }
     }
 
+    fun refreshTemplates() {
+        _state.update { it.copy(templatesLoading = true, templatesError = null) }
+        viewModelScope.launch {
+            val result = fetchTemplates.execute()
+            result.fold(
+                onSuccess = { list ->
+                    Log.e("lol", list.toString())
+                    _state.update { it.copy(templates = list, templatesLoading = false, templatesError = null) }
+                },
+                onFailure = { e ->
+                    _state.update { it.copy(templatesLoading = false, templatesError = e.message) }
+                }
+            )
+        }
+    }
+
+    fun onTemplateClick(title: String) {
+        onInputChange(title)
+    }
 }
