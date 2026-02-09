@@ -11,6 +11,7 @@ import com.example.pockettasks.domain.sort.impl.SortByCreatedDesc
 import com.example.pockettasks.domain.sort.impl.SortByPriorityDesc
 import com.example.pockettasks.domain.sort.TaskSortStrategy
 import com.example.pockettasks.domain.templates.FetchTemplatesUseCase
+import com.example.pockettasks.domain.templates.MarkTemplateUsedUseCase
 import com.example.pockettasks.domain.usecase.AddTaskUseCase
 import com.example.pockettasks.domain.usecase.ObserveTasksUseCase
 import com.example.pockettasks.domain.usecase.ToggleTaskDoneUseCase
@@ -25,7 +26,8 @@ class TasksViewModel(
     private val addTask: AddTaskUseCase,
     private val toggleTaskDone: ToggleTaskDoneUseCase,
     private val sortStrategyFactory: SortStrategyFactory,
-    private val fetchTemplates: FetchTemplatesUseCase
+    private val fetchTemplates: FetchTemplatesUseCase,
+    private val markTemplateUsed: MarkTemplateUsedUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(TaskUiState())
@@ -77,7 +79,6 @@ class TasksViewModel(
             val result = fetchTemplates.execute()
             result.fold(
                 onSuccess = { list ->
-                    Log.e("lol", list.toString())
                     _state.update { it.copy(templates = list, templatesLoading = false, templatesError = null) }
                 },
                 onFailure = { e ->
@@ -87,7 +88,27 @@ class TasksViewModel(
         }
     }
 
-    fun onTemplateClick(title: String) {
+    fun onTemplateClick(templateId: String, title: String) {
+        _state.update { st ->
+            st.copy(
+                templates = st.templates.map { if (it.id == templateId) it.copy(completed = true) else it },
+                templatesError = null
+            )
+        }
+
         onInputChange(title)
+
+        viewModelScope.launch {
+            val result = markTemplateUsed.execute(templateId, used = true)
+            result.onFailure { e ->
+                _state.update { st ->
+                    st.copy(
+                        templates = st.templates.map { if (it.id == templateId) it.copy(completed = false) else it },
+                        templatesError = e.message ?: "Failed to mark template as used"
+                    )
+                }
+            }
+        }
     }
+
 }

@@ -22,7 +22,8 @@ class MainActivity : ComponentActivity() {
                 addTask = AppGraph.addTaskUseCase,
                 toggleTaskDone = AppGraph.toggleTaskDoneUseCase,
                 sortStrategyFactory = AppGraph.sortFactory,
-                fetchTemplates = AppGraph.fetchTemplatesUseCase
+                fetchTemplates = AppGraph.fetchTemplatesUseCase,
+                markTemplateUsed = AppGraph.markTemplateUsedUseCase
             ) as T
         }
     }

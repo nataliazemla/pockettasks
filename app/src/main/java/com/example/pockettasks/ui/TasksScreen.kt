@@ -82,8 +82,8 @@ fun TasksScreen(vm: TasksViewModel) {
         Spacer(Modifier.height(8.dp))
         state.templates.take(6).forEach { t ->
             AssistChip(
-                onClick = { vm.onTemplateClick(t.title) },
-                label = { Text(t.title) }
+                onClick = { vm.onTemplateClick(t.id, t.title) },
+                label = { Text(if (t.completed) "✓ ${t.title}" else t.title) }
             )
             Spacer(Modifier.height(6.dp))
         }

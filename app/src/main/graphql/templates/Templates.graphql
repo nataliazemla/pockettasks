@@ -11,3 +11,10 @@ fragment TodoTemplate on Todo {
     title
     completed
 }
+
+mutation MarkTemplateUsed($id: ID!, $completed: Boolean!) {
+    updateTodo(id: $id, input: { completed: $completed }) {
+        id
+        completed
+    }
+}
