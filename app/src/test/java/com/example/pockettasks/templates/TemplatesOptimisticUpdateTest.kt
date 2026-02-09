@@ -1,10 +1,11 @@
-package com.example.pockettasks
+@file:OptIn(ExperimentalCoroutinesApi::class)
 
+package com.example.pockettasks.templates
+
+import com.example.pockettasks.MainDispatcherRule
 import com.example.pockettasks.data.FakeReadWriteTaskRepository
 import com.example.pockettasks.data.FakeTemplatesReadRepository
 import com.example.pockettasks.data.FakeTemplatesWriteRepository
-import com.example.pockettasks.domain.model.Priority
-import com.example.pockettasks.domain.model.Task
 import com.example.pockettasks.domain.sort.SortOption
 import com.example.pockettasks.domain.sort.SortStrategyFactory
 import com.example.pockettasks.domain.sort.TaskSortStrategy
@@ -17,26 +18,26 @@ import com.example.pockettasks.domain.usecase.ToggleTaskDoneUseCase
 import com.example.pockettasks.domain.validation.TaskTitleRule
 import com.example.pockettasks.ui.TasksViewModel
 import junit.framework.TestCase.assertEquals
+import junit.framework.TestCase.assertFalse
+import junit.framework.TestCase.assertTrue
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
-class TasksViewModelTest {
+class TemplatesOptimisticUpdateTest {
+
+    @get:org.junit.Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     @Test
-    fun `changing sort option changes tasks order via injected factory (DIP)`() = runTest {
-        val t1 = Task("1", "A", false, Priority.MEDIUM, 100)
-        val t2 = Task("2", "B", false, Priority.MEDIUM, 200)
-        val repo = FakeReadWriteTaskRepository(initial = listOf(t1, t2))
-
-        val identity = TaskSortStrategy { it }
-        val observe = ObserveTasksUseCase(readRepo = repo, defaultSort = identity)
+    fun `on mutation failure template is rolled back and error is exposed`() = runTest {
         val allowAllRule = TaskTitleRule { _ -> null }
 
-        val add = AddTaskUseCase(
-            writeRepo = repo,
-            titleRules = listOf(allowAllRule)
-        )
-        val toggle = ToggleTaskDoneUseCase(writeRepo = repo)
+        val tasksRepo = FakeReadWriteTaskRepository()
+        val observe = ObserveTasksUseCase(tasksRepo, defaultSort = TaskSortStrategy { it })
+        val add = AddTaskUseCase(tasksRepo, titleRules = listOf(allowAllRule))
+        val toggle = ToggleTaskDoneUseCase(tasksRepo)
 
         val factory = SortStrategyFactory { option ->
             when (option) {
@@ -45,15 +46,15 @@ class TasksViewModelTest {
             }
         }
 
-        val templatesReadRepo = FakeTemplatesReadRepository(
-            Result.success(listOf(Template("1", "Temp", completed = false)))
-        )
-        val fetchTemplates = FetchTemplatesUseCase(templatesReadRepo)
-
         val writeRepo = FakeTemplatesWriteRepository().apply {
             result = Result.failure(IllegalStateException("network"))
         }
         val markUsed = MarkTemplateUsedUseCase(writeRepo)
+
+        val templatesReadRepo = FakeTemplatesReadRepository(
+            Result.success(listOf(Template("1", "Temp", completed = false)))
+        )
+        val fetchTemplates = FetchTemplatesUseCase(templatesReadRepo)
 
         val vm = TasksViewModel(
             observeTasks = observe,
@@ -64,10 +65,19 @@ class TasksViewModelTest {
             markTemplateUsed = markUsed
         )
 
-        assertEquals(listOf("1", "2"), vm.state.value.tasks.map { it.id })
+        vm.refreshTemplates()
+        advanceUntilIdle()
+        assertEquals(1, vm.state.value.templates.size)
+        assertFalse(vm.state.value.templates.first().completed)
 
-        vm.onSortChange(SortOption.PRIORITY)
+        vm.onTemplateClick("1", "Temp")
+        advanceUntilIdle()
 
-        assertEquals(listOf("2", "1"), vm.state.value.tasks.map { it.id })
+        // po failure -> rollback
+        assertFalse(vm.state.value.templates.first().completed)
+
+        assertTrue(vm.state.value.templatesError?.contains("network") == true)
+        assertEquals("1", writeRepo.lastId)
+        assertEquals(true, writeRepo.lastUsed)
     }
 }
